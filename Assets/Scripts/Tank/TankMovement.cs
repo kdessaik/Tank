@@ -22,8 +22,8 @@ public class TankMovement : MonoBehaviour
         m_Rigidbody.isKinematic = false;
 
         //also reset the input values
-        m_ForwardInputValue = 0;
-        m_TurnInputValue = 0;
+        m_ForwardInputValue = 0f;
+        m_TurnInputValue = 0f;
     }
     private void OnDisable()
     {
@@ -34,6 +34,7 @@ public class TankMovement : MonoBehaviour
     {
         m_ForwardInputValue = Input.GetAxis("Vertical");
         m_TurnInputValue = Input.GetAxis("Horizontal");
+        
 
     }
 
@@ -47,7 +48,7 @@ public class TankMovement : MonoBehaviour
     {
         //create a vector in the direction the tank is facing with a magnitude
         // Based on the input, speed and time between frames
-        Vector3 wantedVelocity = transform.forward * m_ForwardInputValue * m_speed ;
+        Vector3 wantedVelocity = transform.forward * m_ForwardInputValue * m_speed;
 
         //Apply the wantedVelocity minus the current  rigidbody velocity to apply a change
         // in the velocity on the tank

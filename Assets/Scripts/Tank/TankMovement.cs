@@ -32,9 +32,17 @@ public class TankMovement : MonoBehaviour
     }
     private void Update()
     {
-        m.ForwardInputValue = Input.GetAxis("Vertical");
+        m_ForwardInputValue = Input.GetAxis("Vertical");
         m_TurnInputValue = Input.GetAxis("Horizontal");
+
     }
+
+    private void FixedUpdate()
+    {
+        Move();
+        Turn();
+    }
+
     private void Move()
     {
         //create a vector in the direction the tank is facing with a magnitude
@@ -44,34 +52,23 @@ public class TankMovement : MonoBehaviour
         //Apply the wantedVelocity minus the current  rigidbody velocity to apply a change
         // in the velocity on the tank
         //this ignores the mass of the tank
-        m_Rigidbody.AddForce(wantedVelocity - m_Rigidbody.velocity, ForceMode.VelocityChange);
+        m_Rigidbody.AddForce(wantedVelocity - m_Rigidbody.linearVelocity, ForceMode.VelocityChange);
 
 
 
     }
-    private void Move()
-            {
-        //Create a vector in the direction the tank is facing with a magnitude
-        //based on the input, speed and time between frames
-        Vector3 wantedVelocity = transform.forward * m_ForwardInputValue * m_speed;
-
-        //Apply the wantedVelocity minus the current rigidbody velocity to apply a change
-        //in the velocity on the tank
-        //this ignores the mass of the tank
-        m_Rigidbody.AddForce(wantedVelocity - m_Rigidbody.velocity, ForceMode.VelocityChange);
-
-    }
+  
     private void Turn()
     {
         //Determine the number of degrees to be turned based on the input,
         //speed and time between frames
-        float turn = m_TurnInputValue * m_RotationSpeed * Time.deltaTime;
+        float turnValue = m_TurnInputValue * m_RotationSpeed * Time.deltaTime;
 
         //Make this into a rotation in the y axis
-        Quaternion turnRotation = Quaternion.Euler(0f, turn, 0f);
+        Quaternion turnRotation = Quaternion.Euler(0f, turnValue, 0f);
 
         //Apply this rotation to the rigidbody's rotation
-        m_Rigidbody.MoveRotation(transofrm.rotation * turnRotation);
+        m_Rigidbody.MoveRotation(transform.rotation * turnRotation);
     }
 
     

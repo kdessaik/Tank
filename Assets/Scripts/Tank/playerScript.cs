@@ -3,8 +3,9 @@ using UnityEngine;
 public class playerScript : MonoBehaviour
 {
     public Rigidbody rb;
-    public float speed = 3f;
+    public float speed = 1f;
     public float m_RotationSpeed = 180f;//how fast the tank turns in degrees per second
+    private  float m_ForwardInputValue;//the current value of the forward input
 
     public Rigidbody m_Rigidbody;
 
@@ -37,6 +38,7 @@ public class playerScript : MonoBehaviour
     {
         Update();
         Turn();
+        Move();
     }
 
 
@@ -52,6 +54,8 @@ public class playerScript : MonoBehaviour
     void Update()
     {
         m_TurnInputValue = Input.GetAxis("Horizontal");
+        m_ForwardInputValue = Input.GetAxis("Vertical");
+      
 
         if (Input.GetKey(KeyCode.W))
         {
@@ -115,7 +119,19 @@ public class playerScript : MonoBehaviour
             rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
         }
     }
+   
+    private void Move()
+    {
+               //create a vector in the direction the tank is facing with a magnitude
+        // Based on the input, speed and time between frames
+        Vector3 wantedVelocity = transform.forward * m_ForwardInputValue * speed;
+        //Apply the wantedVelocity minus the current  rigidbody velocity to apply a change
+        // in the velocity on the tank
+        //this ignores the mass of the tank
+        m_Rigidbody.AddForce(wantedVelocity - m_Rigidbody.linearVelocity, ForceMode.VelocityChange);
 
+
+    }
 
     private void Turn()
     {

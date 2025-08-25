@@ -2,7 +2,8 @@ using UnityEngine;
 
 public class CameraControl : MonoBehaviour
 {
-    public float m_DampTime = 0.2f;
+    public float m_DampTime = 0.5f;
+
 
     public Transform m_target;
     private Vector3 m_MoveVelocity;
@@ -26,9 +27,11 @@ public class CameraControl : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
-        Camera.main.fieldOfView -= scroll * 1000 * Time.deltaTime;
-        Camera.main.fieldOfView = Mathf.Clamp(Camera.main.fieldOfView, 20, 60);
+       float scroll = Input.GetAxis("Mouse ScrollWheel");
+        
+
+        Camera.main.orthographicSize -= scroll * 10000 * Time.deltaTime;
+        Camera.main.orthographicSize = Mathf.Clamp(Camera.main.orthographicSize, 10, 60);
 
         Move(); 
     }

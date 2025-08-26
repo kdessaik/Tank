@@ -3,37 +3,32 @@ using UnityEngine.AI;
 
 public class EnemyTankMovement : MonoBehaviour
 {
-    // The tank will stop moving towards the player once it reaches this distance
-    public float m_CloseDistance = 8f;
-    // The tank's turret object
-    public Transform m_Turret;
+    public float m_CloseDistance = 8f;         // Distance to stop near player
+    public Transform m_Turret;                // Turret reference
+    public Transform m_Player;                // Assign player in Inspector or find by tag
 
-    // A reference to the player - this will be set when the enemy is loaded
-    private GameObject m_Player;
-    // A reference to the NavMeshAgent component on the tank
     private NavMeshAgent m_NavAgent;
-    // A reference to the Rigidbody component
     private Rigidbody m_Rigidbody;
 
-    // Will be set to true when this tank should follow the player
-    private bool m_Follow;
+    public Transform[] patrolPoints;          // Patrol points for idle movement
+    private int currentPatrolIndex = 0;
+    private bool isBlocked = false;
 
     private void Awake()
     {
-        m_Player = GameObject.FindGameObjectWithTag("Player");
+        if (m_Player == null)
+            m_Player = GameObject.FindGameObjectWithTag("Player").transform;
+
         m_NavAgent = GetComponent<NavMeshAgent>();
         m_Rigidbody = GetComponent<Rigidbody>();
-        m_Follow = true;
     }
 
     private void OnEnable()
     {
         m_Rigidbody.isKinematic = false;
 
-        // Ensure the NavMeshAgent is placed correctly on the NavMesh
-        if (m_NavAgent != null && m_NavAgent.isOnNavMesh == false)
+        if (m_NavAgent != null && !m_NavAgent.isOnNavMesh)
         {
-            // Warp the agent to its current position so it attaches to the NavMesh
             NavMeshHit hit;
             if (NavMesh.SamplePosition(transform.position, out hit, 5f, NavMesh.AllAreas))
             {
@@ -47,56 +42,72 @@ public class EnemyTankMovement : MonoBehaviour
         m_Rigidbody.isKinematic = true;
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            m_Follow = true;
-        }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            m_Follow = false;
-        }
-    }
-
     void Update()
     {
-        if (!m_Follow || m_Player == null || m_NavAgent == null)
+        if (m_Player == null || m_NavAgent == null || !m_NavAgent.isOnNavMesh)
             return;
 
-        if (!m_NavAgent.isOnNavMesh)
-            return; // Prevent errors when agent is not on NavMesh
+        // Always follow the player
+        FollowPlayer();
 
-        // Get distance from player to enemy tank
-        float distance = Vector3.Distance(m_Player.transform.position, transform.position);
-
-        // If distance is greater than stop distance, move towards player
-        if (distance > m_CloseDistance)
+        // If blocked, try alternate path
+        if (isBlocked)
         {
-            if (!m_NavAgent.isStopped)
-            {
-                m_NavAgent.isStopped = false;
-            }
-            m_NavAgent.SetDestination(m_Player.transform.position);
-        }
-        else
-        {
-            if (!m_NavAgent.isStopped)
-            {
-                m_NavAgent.isStopped = true;
-            }
+            ChooseRandomPatrolPoint();
         }
 
         // Rotate turret to face player
         if (m_Turret != null)
         {
-            Vector3 targetPosition = m_Player.transform.position;
-            targetPosition.y = m_Turret.position.y; // Keep rotation only on Y axis
+            Vector3 targetPosition = m_Player.position;
+            targetPosition.y = m_Turret.position.y;
             m_Turret.LookAt(targetPosition);
+        }
+    }
+
+    private void FollowPlayer()
+    {
+        float distance = Vector3.Distance(m_Player.position, transform.position);
+
+        if (distance > m_CloseDistance)
+        {
+            if (m_NavAgent.isStopped)
+                m_NavAgent.isStopped = false;
+
+            m_NavAgent.SetDestination(m_Player.position);
+        }
+        else
+        {
+            if (!m_NavAgent.isStopped)
+                m_NavAgent.isStopped = true;
+        }
+    }
+
+    private void ChooseRandomPatrolPoint()
+    {
+        if (patrolPoints.Length == 0) return;
+
+        currentPatrolIndex = Random.Range(0, patrolPoints.Length);
+        m_NavAgent.SetDestination(patrolPoints[currentPatrolIndex].position);
+        isBlocked = false;
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            Debug.Log("Game Over");
+
+            // OPTIONAL: Stop the enemy
+            if (m_NavAgent != null)
+                m_NavAgent.isStopped = true;
+
+            // Exit game
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false; // Stops Play Mode in Editor
+#else
+            Application.Quit(); // Quits the game in a build
+#endif
         }
     }
 }

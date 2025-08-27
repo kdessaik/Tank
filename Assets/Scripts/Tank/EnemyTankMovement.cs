@@ -50,7 +50,7 @@ public class EnemyTankMovement : MonoBehaviour
         // Always follow the player
         FollowPlayer();
 
-        // If blocked, try alternate path
+        // If blocked, choose another destination
         if (isBlocked)
         {
             ChooseRandomPatrolPoint();
@@ -98,16 +98,20 @@ public class EnemyTankMovement : MonoBehaviour
         {
             Debug.Log("Game Over");
 
-            // OPTIONAL: Stop the enemy
             if (m_NavAgent != null)
                 m_NavAgent.isStopped = true;
 
-            // Exit game
 #if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false; // Stops Play Mode in Editor
+            UnityEditor.EditorApplication.isPlaying = false; // Stops Play Mode in Editor
 #else
             Application.Quit(); // Quits the game in a build
 #endif
+        }
+        else if (collision.gameObject.CompareTag("Enemy") || collision.gameObject.CompareTag("Obstacle"))
+        {
+            // When colliding with another enemy or obstacle, pick a new direction
+            Debug.Log("Collision detected! Changing direction...");
+            isBlocked = true;
         }
     }
 }

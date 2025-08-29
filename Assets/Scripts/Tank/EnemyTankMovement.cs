@@ -3,16 +3,30 @@ using UnityEngine.AI;
 
 public class EnemyTankMovement : MonoBehaviour
 {
-    public float m_CloseDistance = 8f;         // Distance to stop near player
-    public Transform m_Turret;                // Turret reference
-    public Transform m_Player;                // Assign player in Inspector or find by tag
+    [Header("Movement Settings")]
+    public float m_CloseDistance = 8f; // Distance to stop near player
+    public Transform m_Turret; // Turret reference
+    public Transform m_Player; // Assign player in Inspector or via TankHealth script
 
     private NavMeshAgent m_NavAgent;
     private Rigidbody m_Rigidbody;
 
-    public Transform[] patrolPoints;          // Patrol points for idle movement
+    [Header("Patrol Settings")]
+    public Transform[] patrolPoints;
     private int currentPatrolIndex = 0;
     private bool isBlocked = false;
+
+    [Header("Turret Settings")]
+    public float turretRotationSpeed = 3f;
+
+    [Header("Shooting Settings")]
+    public GameObject bulletPrefab; // Assign bullet prefab in Inspector
+    public Transform firePoint; // Assign the position where the bullet will spawn
+    public float fireRate = 2f; // One shot every 2 seconds
+    public float bulletSpeed = 20f;
+    public float shootRange = 30f;
+
+    private float nextFireTime;
 
     private void Awake()
     {
@@ -56,13 +70,11 @@ public class EnemyTankMovement : MonoBehaviour
             ChooseRandomPatrolPoint();
         }
 
-        // Rotate turret to face player
-        if (m_Turret != null)
-        {
-            Vector3 targetPosition = m_Player.position;
-            targetPosition.y = m_Turret.position.y;
-            m_Turret.LookAt(targetPosition);
-        }
+        // Rotate turret smoothly to face player
+        RotateTurret();
+
+        // Check shooting condition
+        TryShoot();
     }
 
     private void FollowPlayer()
@@ -82,6 +94,53 @@ public class EnemyTankMovement : MonoBehaviour
                 m_NavAgent.isStopped = true;
         }
     }
+    void Start()
+    {
+        Collider playerCollider = GameObject.FindWithTag("Player").GetComponent<Collider>();
+        Collider enemyCollider = GetComponent<Collider>();
+
+        Physics.IgnoreCollision(enemyCollider, playerCollider);
+    }
+
+
+    private void RotateTurret()
+    {
+        if (m_Turret != null)
+        {
+            Vector3 targetPosition = m_Player.position;
+            targetPosition.y = m_Turret.position.y;
+
+            Vector3 direction = (targetPosition - m_Turret.position).normalized;
+            Quaternion lookRotation = Quaternion.LookRotation(direction);
+            m_Turret.rotation = Quaternion.Slerp(m_Turret.rotation, lookRotation, Time.deltaTime * turretRotationSpeed);
+        }
+    }
+
+    private void TryShoot()
+    {
+        float distanceToPlayer = Vector3.Distance(transform.position, m_Player.position);
+
+        if (distanceToPlayer <= shootRange && Time.time >= nextFireTime)
+        {
+            nextFireTime = Time.time + fireRate;
+            Shoot();
+        }
+    }
+
+    private void Shoot()
+    {
+        if (bulletPrefab != null && firePoint != null)
+        {
+            GameObject bullet = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
+            Rigidbody rb = bullet.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = firePoint.forward * bulletSpeed;
+            }
+
+            Destroy(bullet, 5f); // Destroy bullet after 5 seconds
+        }
+    }
 
     private void ChooseRandomPatrolPoint()
     {
@@ -93,25 +152,5 @@ public class EnemyTankMovement : MonoBehaviour
     }
 
     private void OnCollisionEnter(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("Player"))
-        {
-            Debug.Log("Game Over");
-
-            if (m_NavAgent != null)
-                m_NavAgent.isStopped = true;
-
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false; // Stops Play Mode in Editor
-#else
-            Application.Quit(); // Quits the game in a build
-#endif
-        }
-        else if (collision.gameObject.CompareTag("Enemy") || collision.gameObject.CompareTag("Obstacle"))
-        {
-            // When colliding with another enemy or obstacle, pick a new direction
-            Debug.Log("Collision detected! Changing direction...");
-            isBlocked = true;
-        }
-    }
+    { }
 }

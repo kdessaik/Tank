@@ -5,7 +5,7 @@ public class Shell : MonoBehaviour
     //The time in second before the shell is removed
     public float m_MaxLifeTime = 2f;
     //The amount of the damage done if the explosion is centered on a tank
-    public float m_MaxDamage = 34f;
+    public float m_MaxDamage = 10f;
     //The maximum distance away from the explosion tanks can be and are still affected
     public float m_ExplosionRadius = 5f;
     //The amount of force added to a tank at the center of the explosion
@@ -48,7 +48,7 @@ public class Shell : MonoBehaviour
         
 
         //Unparent the particles from the shell
-        m_ExplosionParticles.transform.parent = null;
+        m_ExplosionParticles.transform.parent =null;
         //Play the particle system
         m_ExplosionParticles.Play();
 

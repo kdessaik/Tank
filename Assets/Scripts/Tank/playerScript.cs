@@ -17,6 +17,7 @@ public class playerScript : MonoBehaviour
     {
         m_Rigidbody = GetComponent<Rigidbody>();
     }
+   
 
     private void OnEnable()
     {
@@ -47,7 +48,11 @@ public class playerScript : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        Collider playerCollider = GameObject.FindWithTag("Player").GetComponent<Collider>();
+        Collider enemyCollider = GetComponent<Collider>();
+
+        Physics.IgnoreCollision(enemyCollider, playerCollider);
+
     }
 
     // Update is called once per frame

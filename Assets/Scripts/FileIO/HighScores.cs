@@ -5,115 +5,104 @@ public class HighScores : MonoBehaviour
 {
     public int[] scores = new int[10];
 
-    string currentDirectory;
+    private string scoreFilePath;
 
-    public string scoreFileName = "highscores.txt";
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private void Awake()
     {
-        // Printing the current directory to the console
-        currentDirectory = Application.dataPath;
-        Debug.Log("Our current directory is: " + currentDirectory);
-        // Load the scores by default
+        // Use persistent path for proper saving on all platforms
+        scoreFilePath = Path.Combine(Application.persistentDataPath, "highscores.txt");
         LoadScoresFromFile();
     }
 
     public void LoadScoresFromFile()
     {
-        // Before we try to read a file, we should check that it exists. If it doesn't exist, we'll log a message and abort.
-        bool fileExists = File.Exists(currentDirectory + "\\" + scoreFileName);
-        if (fileExists == true)
+        if (!File.Exists(scoreFilePath))
         {
-            Debug.Log("Found high score file " + scoreFileName);
-        }
-        else
-        {
-            Debug.Log("The file " + scoreFileName + " does not exist. No scores will be loaded.", this);
+            Debug.Log("High score file not found, creating default file.");
+            InitializeDefaultScores();
+            SaveScoresToFile();
             return;
         }
 
-        // Make a new array of default values
-        scores = new int[scores.Length];
-
-        // Now we read the file in
-        StreamReader fileReader = new StreamReader(currentDirectory + "\\" + scoreFileName);
-
-        int scoreCount = 0;
-
-        // A while loop to read scores
-        while (fileReader.Peek() != -1 && scoreCount < scores.Length)
+        try
         {
-            string fileLine = fileReader.ReadLine();
-
-            int readScore = -1;
-            bool didParse = int.TryParse(fileLine, out readScore);
-
-            if (didParse)
+            string[] lines = File.ReadAllLines(scoreFilePath);
+            for (int i = 0; i < scores.Length && i < lines.Length; i++)
             {
-                scores[scoreCount] = readScore;
+                if (!int.TryParse(lines[i], out scores[i]))
+                {
+                    scores[i] = 0; // fallback for invalid data
+                }
             }
-            else
-            {
-                Debug.Log("Invalid line in scores file at " + scoreCount + ", using default value.", this);
-                scores[scoreCount] = 0;
-            }
-
-            scoreCount++;
+            Debug.Log("High scores loaded successfully.");
         }
-
-        // Close the stream
-        fileReader.Close();
-        Debug.Log("High scores read from " + scoreFileName);
+        catch (System.Exception e)
+        {
+            Debug.LogError("Error loading scores: " + e.Message);
+        }
     }
 
     public void SaveScoresToFile()
     {
-        // Create a StreamWriter for our file path
-        StreamWriter fileWriter = new StreamWriter(currentDirectory + "\\" + scoreFileName);
-
-        // Write the lines to the file
-        for (int i = 0; i < scores.Length; i++)
+        try
         {
-            fileWriter.WriteLine(scores[i]);
+            using (StreamWriter writer = new StreamWriter(scoreFilePath))
+            {
+                for (int i = 0; i < scores.Length; i++)
+                {
+                    writer.WriteLine(scores[i]);
+                }
+            }
+            Debug.Log("High scores saved to file.");
         }
-
-        // Close the stream
-        fileWriter.Close();
-
-        Debug.Log("High scores written to " + scoreFileName);
+        catch (System.Exception e)
+        {
+            Debug.LogError("Error saving scores: " + e.Message);
+        }
     }
 
     public void AddScore(int newScore)
     {
-        int desiredIndex = -1;
+        // Insert the new score in the correct position
         for (int i = 0; i < scores.Length; i++)
         {
-            if (scores[i] < newScore || scores[i] == 0)
+            if (newScore > scores[i])
             {
-                desiredIndex = i;
-                break;
+                for (int j = scores.Length - 1; j > i; j--)
+                {
+                    scores[j] = scores[j - 1];
+                }
+                scores[i] = newScore;
+                Debug.Log("Score " + newScore + " added at position " + i);
+                return;
+            }
+        }
+    }
+
+    private void InitializeDefaultScores()
+    {
+        for (int i = 0; i < scores.Length; i++)
+        {
+            scores[i] = 0;
+        }
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.F9))
+        {
+            LoadScoresFromFile();
+            Debug.Log("Scores after loading:");
+            for (int i = 0; i < scores.Length; i++)
+            {
+                Debug.Log("Score " + (i + 1) + ": " + scores[i]);
             }
         }
 
-        if (desiredIndex < 0)
+        if (Input.GetKeyDown(KeyCode.F10))
         {
-            Debug.Log("Score of " + newScore + " not high enough for high scores list.", this);
-            return;
+            SaveScoresToFile();
+            Debug.Log("Scores saved to file.");
         }
-
-        for (int i = scores.Length - 1; i > desiredIndex; i--)
-        {
-            scores[i] = scores[i - 1];
-        }
-
-        scores[desiredIndex] = newScore;
-        Debug.Log("Score of " + newScore + " entered into high scores at position " + desiredIndex, this);
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 }

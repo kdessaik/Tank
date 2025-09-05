@@ -2,6 +2,9 @@ using UnityEngine;
 
 public class TankShooting : MonoBehaviour
 {
+    //Sound effect
+    public AudioSource src;
+    public AudioClip sfx1;
     //Prefeb of the Shell
     public Rigidbody m_Shell;
     //A child of the tank where the shells are spawned
@@ -24,6 +27,8 @@ public class TankShooting : MonoBehaviour
         if(Input.GetButtonUp("Fire1"))
         {
             Fire();
+            src.clip = sfx1;
+            src.Play();
         }
         
     }

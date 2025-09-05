@@ -1,13 +1,18 @@
-using UnityEngine;
+﻿using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem; // New Input System
 #endif
 using TMPro;
 using UnityEngine.UI;
 using System.Text;
+using UnityEngine.Audio;
 
 public class GameManagers : MonoBehaviour
 {
+    public AudioSource src;     // background/ambient music or gameplay SFX (looping)
+    public AudioSource srcWin;  // dedicated source for victory (optional but nice to have)
+    public AudioClip sfx1, sfx2, sfx3; // sfx3 = victory
+
     public HighScores m_HighScores;
 
     public TextMeshProUGUI m_MessageText;
@@ -38,6 +43,11 @@ public class GameManagers : MonoBehaviour
     private GameState m_GameState;
     public GameState State { get { return m_GameState; } }
 
+    private EnemyTankShooting[] m_AllEnemyShooters;
+
+    // --- NEW: ensure victory sound only plays once per win ---
+    private bool victorySoundPlayed = false;
+
     private void Awake()
     {
         m_GameState = GameState.Start;
@@ -45,6 +55,8 @@ public class GameManagers : MonoBehaviour
 
     private void Start()
     {
+        StartLoopingAudio();
+
         m_TankPositions = new Vector3[m_Tanks.Length];
         m_TankRotations = new Quaternion[m_Tanks.Length];
 
@@ -55,12 +67,27 @@ public class GameManagers : MonoBehaviour
             m_Tanks[i].SetActive(false);
         }
 
+        CacheEnemyShooters();
+        SetEnemyShootingEnabled(false);
+
         m_TimerText.gameObject.SetActive(false);
         m_MessageText.text = "Get Ready";
 
         m_HighScorePanel.SetActive(false);
         m_NewGameButton.gameObject.SetActive(false);
         m_HighScoresButton.gameObject.SetActive(false);
+
+        victorySoundPlayed = false; // reset at start
+    }
+
+    public void StartLoopingAudio()
+    {
+        if (src != null && sfx1 != null)
+        {
+            src.clip = sfx1;
+            src.loop = true;  // keep ambience/music going
+            src.Play();
+        }
     }
 
     private void Update()
@@ -151,12 +178,33 @@ public class GameManagers : MonoBehaviour
         {
             m_MessageText.text = "WINNER!";
             isGameOver = true;
-            m_HighScores.AddScore(Mathf.RoundToInt(m_gameTime));
-            m_HighScores.SaveScoresToFile();
+
+            // --- Play victory sound once, without affecting other audio ---
+            if (!victorySoundPlayed && sfx3 != null)
+            {
+                // Prefer a dedicated source if provided; otherwise safely use src with PlayOneShot (doesn't change current clip)
+                if (srcWin != null)
+                {
+                    srcWin.PlayOneShot(sfx3);
+                }
+                else if (src != null)
+                {
+                    src.PlayOneShot(sfx3);
+                }
+                victorySoundPlayed = true;
+            }
+
+            // Save score once on win
+            if (m_HighScores != null)
+            {
+                m_HighScores.AddScore(Mathf.RoundToInt(m_gameTime));
+                m_HighScores.SaveScoresToFile();
+            }
         }
 
         if (isGameOver)
         {
+            SetEnemyShootingEnabled(false); // stop enemy fire immediately
             m_GameState = GameState.GameOver;
             m_NewGameButton.gameObject.SetActive(true);
             m_HighScoresButton.gameObject.SetActive(true);
@@ -181,6 +229,11 @@ public class GameManagers : MonoBehaviour
             m_Tanks[i].transform.rotation = m_TankRotations[i];
             m_Tanks[i].SetActive(true);
         }
+
+        SetEnemyShootingEnabled(true); // allow enemies to shoot now
+
+        // --- reset for new round ---
+        victorySoundPlayed = false;
     }
 
     public void OnHighScores()
@@ -195,5 +248,24 @@ public class GameManagers : MonoBehaviour
             sb.AppendFormat("{0:D2}:{1:D2}\n", (seconds / 60), (seconds % 60));
         }
         m_HighScoresText.text = sb.ToString();
+    }
+
+    //  New methods for enemy control
+    private void CacheEnemyShooters()
+    {
+        m_AllEnemyShooters = FindObjectsOfType<EnemyTankShooting>(true); // include inactive
+    }
+
+    private void SetEnemyShootingEnabled(bool enabled)
+    {
+        if (m_AllEnemyShooters == null) return;
+
+        foreach (var shooter in m_AllEnemyShooters)
+        {
+            if (shooter == null) continue;
+
+            shooter.ResetShooting();
+            shooter.SetShootingEnabled(enabled);
+        }
     }
 }

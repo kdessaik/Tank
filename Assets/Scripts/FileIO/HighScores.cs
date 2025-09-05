@@ -1,9 +1,17 @@
+// ============================================================
+// Script written by Dessai KIBEHO
+// Handles saving, loading, and managing high scores.
+// Automatically stores scores in a text file inside
+// Application.persistentDataPath for cross-platform persistence.
+// ============================================================
+
 using UnityEngine;
 using System.IO;
 
 public class HighScores : MonoBehaviour
 {
-    public int[] scores = new int[10];
+    [Header("High Score Settings")]
+    public int[] scores = new int[10]; // Store up to 10 high scores
 
     private string scoreFilePath;
 
@@ -18,7 +26,7 @@ public class HighScores : MonoBehaviour
     {
         if (!File.Exists(scoreFilePath))
         {
-            Debug.Log("High score file not found, creating default file.");
+            // File not found: create default scores then save
             InitializeDefaultScores();
             SaveScoresToFile();
             return;
@@ -34,11 +42,10 @@ public class HighScores : MonoBehaviour
                     scores[i] = 0; // fallback for invalid data
                 }
             }
-            Debug.Log("High scores loaded successfully.");
         }
-        catch (System.Exception e)
+        catch (System.Exception)
         {
-            Debug.LogError("Error loading scores: " + e.Message);
+            // Silently ignore errors; keeps scores as-is
         }
     }
 
@@ -53,27 +60,26 @@ public class HighScores : MonoBehaviour
                     writer.WriteLine(scores[i]);
                 }
             }
-            Debug.Log("High scores saved to file.");
         }
-        catch (System.Exception e)
+        catch (System.Exception)
         {
-            Debug.LogError("Error saving scores: " + e.Message);
+            // Silently ignore save errors
         }
     }
 
     public void AddScore(int newScore)
     {
-        // Insert the new score in the correct position
+        // Insert the new score in the correct position (descending order)
         for (int i = 0; i < scores.Length; i++)
         {
             if (newScore > scores[i])
             {
+                // Shift lower scores down
                 for (int j = scores.Length - 1; j > i; j--)
                 {
                     scores[j] = scores[j - 1];
                 }
                 scores[i] = newScore;
-                Debug.Log("Score " + newScore + " added at position " + i);
                 return;
             }
         }
@@ -89,20 +95,15 @@ public class HighScores : MonoBehaviour
 
     private void Update()
     {
+        // Optional hotkeys for testing saving/loading:
         if (Input.GetKeyDown(KeyCode.F9))
         {
             LoadScoresFromFile();
-            Debug.Log("Scores after loading:");
-            for (int i = 0; i < scores.Length; i++)
-            {
-                Debug.Log("Score " + (i + 1) + ": " + scores[i]);
-            }
         }
 
         if (Input.GetKeyDown(KeyCode.F10))
         {
             SaveScoresToFile();
-            Debug.Log("Scores saved to file.");
         }
     }
 }

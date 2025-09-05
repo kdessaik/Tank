@@ -1,6 +1,12 @@
-﻿using UnityEngine;
+﻿// ============================================================
+// Script written by Dessai KIBEHO
+// Manages the whole game state:
+// start, playing, game over, high scores, timer and audio feedback.
+// ============================================================
+
+using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem; // New Input System
+using UnityEngine.InputSystem; // Support for new Input System
 #endif
 using TMPro;
 using UnityEngine.UI;
@@ -9,47 +15,43 @@ using UnityEngine.Audio;
 
 public class GameManagers : MonoBehaviour
 {
-    public AudioSource src;     // background/ambient music or gameplay SFX (looping)
-    public AudioSource srcWin;  // dedicated source for victory (optional but nice to have)
-    public AudioClip sfx1, sfx2, sfx3; // sfx3 = victory
+    [Header("Audio")]
+    public AudioSource src;       // Background/ambient music or looping gameplay SFX
+    public AudioSource srcWin;    // Dedicated audio source for victory sound
+    public AudioClip sfx1, sfx2, sfx3; // sfx3 = victory sound clip
 
-    public HighScores m_HighScores;
+    [Header("High Scores")]
+    public HighScores m_HighScores;         // HighScores manager reference
 
-    public TextMeshProUGUI m_MessageText;
-    public TextMeshProUGUI m_TimerText;
+    [Header("UI Elements")]
+    public TextMeshProUGUI m_MessageText;   // Message text (start/win/lose)
+    public TextMeshProUGUI m_TimerText;     // Timer text display
+    public GameObject m_HighScorePanel;     // Panel showing high scores
+    public TextMeshProUGUI m_HighScoresText;// Text inside high score panel
+    public Button m_NewGameButton;          // Button to start a new game
+    public Button m_HighScoresButton;       // Button to show high scores
 
-    public GameObject[] m_Tanks;
-    private Vector3[] m_TankPositions;
-    private Quaternion[] m_TankRotations;
+    [Header("Tanks")]
+    public GameObject[] m_Tanks;            // Array of tanks in the game (player + enemies)
 
-    public GameObject m_HighScorePanel;
-    public TextMeshProUGUI m_HighScoresText;
+    private Vector3[] m_TankPositions;      // Initial positions of each tank
+    private Quaternion[] m_TankRotations;   // Initial rotations of each tank
 
-    public Button m_NewGameButton;
-    public Button m_HighScoresButton;
-
-    private float m_gameTime = 0;
+    private float m_gameTime = 0;           // Tracks elapsed time
     public float GameTime { get { return m_gameTime; } }
 
-    private int lastSecond = -1;
+    private int lastSecond = -1;            // For updating timer display once per second
 
-    public enum GameState
-    {
-        Start,
-        Playing,
-        GameOver
-    };
-
-    private GameState m_GameState;
+    public enum GameState { Start, Playing, GameOver };
+    private GameState m_GameState;          // Current state of the game
     public GameState State { get { return m_GameState; } }
 
-    private EnemyTankShooting[] m_AllEnemyShooters;
-
-    // --- NEW: ensure victory sound only plays once per win ---
-    private bool victorySoundPlayed = false;
+    private EnemyTankShooting[] m_AllEnemyShooters; // Cached references to enemy shooters
+    private bool victorySoundPlayed = false; // Ensure victory sound plays only once per win
 
     private void Awake()
     {
+        // Set initial state
         m_GameState = GameState.Start;
     }
 
@@ -57,6 +59,7 @@ public class GameManagers : MonoBehaviour
     {
         StartLoopingAudio();
 
+        // Cache starting positions and rotations, and disable all tanks
         m_TankPositions = new Vector3[m_Tanks.Length];
         m_TankRotations = new Quaternion[m_Tanks.Length];
 
@@ -70,40 +73,43 @@ public class GameManagers : MonoBehaviour
         CacheEnemyShooters();
         SetEnemyShootingEnabled(false);
 
+        // Hide UI elements at start
         m_TimerText.gameObject.SetActive(false);
         m_MessageText.text = "Get Ready";
-
         m_HighScorePanel.SetActive(false);
         m_NewGameButton.gameObject.SetActive(false);
         m_HighScoresButton.gameObject.SetActive(false);
 
-        victorySoundPlayed = false; // reset at start
+        victorySoundPlayed = false;
     }
 
+    // Play background/ambient loop at game start
     public void StartLoopingAudio()
     {
         if (src != null && sfx1 != null)
         {
             src.clip = sfx1;
-            src.loop = true;  // keep ambience/music going
+            src.loop = true;
             src.Play();
         }
     }
 
     private void Update()
     {
+        // Quit game if Escape pressed
         if (EscWasReleased())
         {
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #elif UNITY_WEBGL
-            Debug.Log("Quit not supported on WebGL.");
+            // Quit not supported on WebGL.
 #else
             Application.Quit();
 #endif
             return;
         }
 
+        // Handle game states
         switch (m_GameState)
         {
             case GameState.Start:
@@ -120,6 +126,7 @@ public class GameManagers : MonoBehaviour
         }
     }
 
+    // Cross-platform Escape key check
     private bool EscWasReleased()
     {
 #if ENABLE_INPUT_SYSTEM
@@ -129,6 +136,7 @@ public class GameManagers : MonoBehaviour
 #endif
     }
 
+    // Cross-platform Enter key check
     private bool EnterWasReleased()
     {
 #if ENABLE_INPUT_SYSTEM
@@ -138,6 +146,7 @@ public class GameManagers : MonoBehaviour
 #endif
     }
 
+    // Check if only one tank left (win condition)
     private bool OneTankLeft()
     {
         int numTanksLeft = 0;
@@ -148,6 +157,7 @@ public class GameManagers : MonoBehaviour
         return numTanksLeft <= 1;
     }
 
+    // Check if player tank is dead
     private bool IsPlayerDead()
     {
         for (int i = 0; i < m_Tanks.Length; i++)
@@ -157,11 +167,13 @@ public class GameManagers : MonoBehaviour
         return true;
     }
 
+    // Handle logic while playing
     private void GameStatePlaying()
     {
         bool isGameOver = false;
         m_gameTime += Time.deltaTime;
 
+        // Update timer display once per second
         int seconds = Mathf.RoundToInt(m_gameTime);
         if (seconds != lastSecond)
         {
@@ -179,22 +191,15 @@ public class GameManagers : MonoBehaviour
             m_MessageText.text = "WINNER!";
             isGameOver = true;
 
-            // --- Play victory sound once, without affecting other audio ---
+            // Play victory sound once
             if (!victorySoundPlayed && sfx3 != null)
             {
-                // Prefer a dedicated source if provided; otherwise safely use src with PlayOneShot (doesn't change current clip)
-                if (srcWin != null)
-                {
-                    srcWin.PlayOneShot(sfx3);
-                }
-                else if (src != null)
-                {
-                    src.PlayOneShot(sfx3);
-                }
+                if (srcWin != null) srcWin.PlayOneShot(sfx3);
+                else if (src != null) src.PlayOneShot(sfx3);
                 victorySoundPlayed = true;
             }
 
-            // Save score once on win
+            // Save high score on win
             if (m_HighScores != null)
             {
                 m_HighScores.AddScore(Mathf.RoundToInt(m_gameTime));
@@ -204,13 +209,14 @@ public class GameManagers : MonoBehaviour
 
         if (isGameOver)
         {
-            SetEnemyShootingEnabled(false); // stop enemy fire immediately
+            SetEnemyShootingEnabled(false); // Stop enemy fire immediately
             m_GameState = GameState.GameOver;
             m_NewGameButton.gameObject.SetActive(true);
             m_HighScoresButton.gameObject.SetActive(true);
         }
     }
 
+    // Start a new game: reset UI, tanks and enemy shooting
     public void OnNewGame()
     {
         m_NewGameButton.gameObject.SetActive(false);
@@ -223,6 +229,7 @@ public class GameManagers : MonoBehaviour
         m_gameTime = 0;
         m_GameState = GameState.Playing;
 
+        // Reset all tanks to their starting positions and rotations
         for (int i = 0; i < m_Tanks.Length; i++)
         {
             m_Tanks[i].transform.position = m_TankPositions[i];
@@ -230,12 +237,11 @@ public class GameManagers : MonoBehaviour
             m_Tanks[i].SetActive(true);
         }
 
-        SetEnemyShootingEnabled(true); // allow enemies to shoot now
-
-        // --- reset for new round ---
-        victorySoundPlayed = false;
+        SetEnemyShootingEnabled(true); // Allow enemies to shoot now
+        victorySoundPlayed = false;    // Reset victory flag
     }
 
+    // Show high scores panel with formatted times
     public void OnHighScores()
     {
         m_MessageText.text = "";
@@ -250,12 +256,13 @@ public class GameManagers : MonoBehaviour
         m_HighScoresText.text = sb.ToString();
     }
 
-    //  New methods for enemy control
+    // Cache enemy shooter references, including inactive ones
     private void CacheEnemyShooters()
     {
-        m_AllEnemyShooters = FindObjectsOfType<EnemyTankShooting>(true); // include inactive
+        m_AllEnemyShooters = FindObjectsOfType<EnemyTankShooting>(true);
     }
 
+    // Enable or disable enemy shooting
     private void SetEnemyShootingEnabled(bool enabled)
     {
         if (m_AllEnemyShooters == null) return;

@@ -1,71 +1,89 @@
+// ============================================================
+// Script written by Esther Namulen
+// Player movement and rotation script for Unity
+// ============================================================
+
 using UnityEngine;
 
 public class playerScript : MonoBehaviour
 {
+    // Reference to the Rigidbody attached to the player
     public Rigidbody rb;
-    public float speed = 1f;
-    public float m_RotationSpeed = 180f;//how fast the tank turns in degrees per second
-    private  float m_ForwardInputValue;//the current value of the forward input
 
+    // Movement speed of the player
+    public float speed = 1f;
+
+    // Rotation speed in degrees per second (how fast the player rotates)
+    public float m_RotationSpeed = 180f;
+
+    // Stores the current value of the forward/backward input (W/S keys)
+    private float m_ForwardInputValue;
+
+    // Reference to the player's Rigidbody used for physics-based movement
     public Rigidbody m_Rigidbody;
 
-    
-    private float m_TurnInputValue;//the current value of the turn input
+    // Stores the current value of the turn input (A/D keys)
+    private float m_TurnInputValue;
 
-
+    // Called when the script instance is being loaded
     private void Awake()
     {
+        // Get the Rigidbody component attached to this GameObject
         m_Rigidbody = GetComponent<Rigidbody>();
     }
-   
 
+    // Called when the object becomes enabled and active
     private void OnEnable()
     {
-        //when the tank is turned on, make sure it's not kinematic
+        // Ensure the Rigidbody is not kinematic so it can be affected by physics
         m_Rigidbody.isKinematic = false;
 
-        //also reset the input values
-        
+        // Reset the turn input value to zero
         m_TurnInputValue = 0f;
     }
+
+    // Called when the object becomes disabled or inactive
     private void OnDisable()
     {
-        //when the tank is turned off, make it kinematic so it stops moving
+        // Make the Rigidbody kinematic so it stops moving and isn’t affected by physics
         m_Rigidbody.isKinematic = true;
     }
 
-
+    // Called every fixed framerate frame (for physics updates)
     private void FixedUpdate()
     {
-        Update();
+        // Process input and apply movement & rotation
+        Update(); // Manually calling Update here (unusual, but in this script it’s used to capture input)
         Turn();
         Move();
     }
 
-
-
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    // Called before the first frame update
     void Start()
     {
+        // Get the collider of the player object tagged "Player"
         Collider playerCollider = GameObject.FindWithTag("Player").GetComponent<Collider>();
+
+        // Get the collider attached to this GameObject
         Collider enemyCollider = GetComponent<Collider>();
 
+        // Prevent collisions between this object and the player object
         Physics.IgnoreCollision(enemyCollider, playerCollider);
-
     }
 
-    // Update is called once per frame
+    // Called once per frame
     void Update()
     {
+        // Get horizontal input (A/D or arrow keys) for turning
         m_TurnInputValue = Input.GetAxis("Horizontal");
-        m_ForwardInputValue = Input.GetAxis("Vertical");
-      
 
+        // Get vertical input (W/S or arrow keys) for moving forward/backward
+        m_ForwardInputValue = Input.GetAxis("Vertical");
+
+        // Check movement keys manually to apply direct velocity changes to rb
         if (Input.GetKey(KeyCode.W))
         {
-
-
+            // Moving forward with possible diagonal inputs
             if (Input.GetKey(KeyCode.A))
             {
                 rb.linearVelocity = new Vector3(-speed, rb.linearVelocity.y, speed);
@@ -79,22 +97,19 @@ public class playerScript : MonoBehaviour
                 rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, speed);
             }
         }
-
         else if (Input.GetKey(KeyCode.A))
         {
+            // Move left
             rb.linearVelocity = new Vector3(-speed, rb.linearVelocity.y, 0);
         }
         else if (Input.GetKey(KeyCode.D))
         {
+            // Move right
             rb.linearVelocity = new Vector3(speed, rb.linearVelocity.y, 0);
         }
-
-
-        
         else if (Input.GetKey(KeyCode.S))
         {
-            
-
+            // Moving backward with possible diagonal inputs
             if (Input.GetKey(KeyCode.A))
             {
                 rb.linearVelocity = new Vector3(-speed, rb.linearVelocity.y, -speed);
@@ -107,9 +122,6 @@ public class playerScript : MonoBehaviour
             {
                 rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, -speed);
             }
-
-
-
         }
         else if (Input.GetKey(KeyCode.A))
         {
@@ -117,39 +129,35 @@ public class playerScript : MonoBehaviour
         }
         else if (Input.GetKey(KeyCode.D))
         {
-            rb.linearVelocity = new Vector3(speed, rb.linearVelocity.y, 0  );
+            rb.linearVelocity = new Vector3(speed, rb.linearVelocity.y, 0);
         }
         else
         {
+            // No key pressed, stop movement
             rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
         }
     }
-   
+
+    // Handles movement using AddForce to change velocity
     private void Move()
     {
-               //create a vector in the direction the tank is facing with a magnitude
-        // Based on the input, speed and time between frames
+        // Create a vector pointing forward multiplied by input and speed
         Vector3 wantedVelocity = transform.forward * m_ForwardInputValue * speed;
-        //Apply the wantedVelocity minus the current  rigidbody velocity to apply a change
-        // in the velocity on the tank
-        //this ignores the mass of the tank
+
+        // Apply force to achieve the desired velocity instantly (ignoring mass)
         m_Rigidbody.AddForce(wantedVelocity - m_Rigidbody.linearVelocity, ForceMode.VelocityChange);
-
-
     }
 
+    // Handles turning based on horizontal input
     private void Turn()
     {
-        //Determine the number of degrees to be turned based on the input,
-        //speed and time between frames
+        // Determine the amount of rotation this frame
         float turnValue = m_TurnInputValue * m_RotationSpeed * Time.deltaTime;
 
-        //Make this into a rotation in the y axis
+        // Create a rotation on the Y axis
         Quaternion turnRotation = Quaternion.Euler(0f, turnValue, 0f);
 
-        //Apply this rotation to the rigidbody's rotation
+        // Apply this rotation to the Rigidbody
         m_Rigidbody.MoveRotation(transform.rotation * turnRotation);
     }
-
-
 }

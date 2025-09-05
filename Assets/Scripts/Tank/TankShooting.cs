@@ -1,43 +1,53 @@
+// ============================================================
+// Script written by Yik Malehek
+// Handles the player tank shooting behaviour:
+// spawns shells, applies launch force, and plays shooting sound.
+// ============================================================
+
 using UnityEngine;
 
 public class TankShooting : MonoBehaviour
 {
-    //Sound effect
-    public AudioSource src;
-    public AudioClip sfx1;
-    //Prefeb of the Shell
-    public Rigidbody m_Shell;
-    //A child of the tank where the shells are spawned
-    public Transform m_FireTransform;
-    //The forcegiven to the shell when firing
-    public float m_LauchForce = 30f;
-    private float m_LaunchForce = 30f;
+    [Header("Audio Settings")]
+    public AudioSource src;           // Audio source used to play the shooting sound
+    public AudioClip sfx1;             // Shooting sound clip
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    [Header("Shell Settings")]
+    public Rigidbody m_Shell;          // Prefab of the shell (assign in Inspector)
+    public Transform m_FireTransform;  // Child transform where shells spawn (usually the barrel)
+
+    // The force given to the shell when firing
+    public float m_LauchForce = 30f;   // Original field (not used)
+    private float m_LaunchForce = 30f; // Actual launch force used internally
+
+    // Called before the first frame update
     void Start()
     {
-        
+        // If you want to sync m_LaunchForce to m_LauchForce automatically:
+        m_LaunchForce = m_LauchForce;
     }
 
-    // Update is called once per frame
+    // Called once per frame
     void Update()
     {
-        //ToDo: Later on,
-        //sure the game isn't over
-        if(Input.GetButtonUp("Fire1"))
+        // TODO: In the future, check if the game is over before firing
+        // Fire when the Fire1 button (default: left mouse button) is released
+        if (Input.GetButtonUp("Fire1"))
         {
-            Fire();
-            src.clip = sfx1;
-            src.Play();
+            Fire();         // Spawn and shoot the shell
+            src.clip = sfx1; // Assign the sound clip
+            src.Play();      // Play the shooting sound
         }
-        
     }
+
+    // Spawns a shell prefab and applies launch force to it
     private void Fire()
     {
-        //Create an instance of the shell and store a reference to its rigidbody
+        // Create an instance of the shell at the fire transform�s position and rotation
         Rigidbody shellInstance = Instantiate(m_Shell, m_FireTransform.position, m_FireTransform.rotation);
-        //Set the shell's velocity to the launch force in the fire 
-        //position's forward direction
+
+        // Set the shell�s velocity so it moves forward at launch force
+        // ? Unity uses "velocity" (not "linearVelocity")
         shellInstance.linearVelocity = m_LaunchForce * m_FireTransform.forward;
     }
 }

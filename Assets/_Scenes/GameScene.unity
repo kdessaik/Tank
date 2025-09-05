@@ -492,7 +492,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071069, y: -0, z: -0, w: 0.7071067}
   m_LocalPosition: {x: -10, y: 345, z: -245}
-  m_LocalScale: {x: 100, y: 100.000015, z: 100.000015}
+  m_LocalScale: {x: 500, y: 500, z: 500}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2021729884}
@@ -7686,8 +7686,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1866867372}
     - target: {fileID: 8002223017021369665, guid: da9b85ad850fd5247b404a82b9633b3a, type: 3}
+      propertyPath: damagePerHit
+      value: 500
+      objectReference: {fileID: 0}
+    - target: {fileID: 8002223017021369665, guid: da9b85ad850fd5247b404a82b9633b3a, type: 3}
       propertyPath: startingHealth
-      value: 2000
+      value: 5000
       objectReference: {fileID: 0}
     - target: {fileID: 8002223017021369665, guid: da9b85ad850fd5247b404a82b9633b3a, type: 3}
       propertyPath: m_EnemyTankPrefab
@@ -7843,6 +7847,7 @@ MonoBehaviour:
   - {fileID: 1384285125}
   - {fileID: 550627695}
   - {fileID: 1992279016}
+  - {fileID: 2050877329}
   m_HighScorePanel: {fileID: 1451827854}
   m_HighScoresText: {fileID: 1232052594}
   m_NewGameButton: {fileID: 724962762}
@@ -8442,6 +8447,10 @@ PrefabInstance:
       propertyPath: audioSource
       value: 
       objectReference: {fileID: 1088576533}
+    - target: {fileID: 5607461038186446629, guid: 4f6e44f0a9392124192e188ce7b65745, type: 3}
+      propertyPath: damagePerHit
+      value: 300
+      objectReference: {fileID: 0}
     - target: {fileID: 6645986204765570972, guid: 4f6e44f0a9392124192e188ce7b65745, type: 3}
       propertyPath: src
       value: 

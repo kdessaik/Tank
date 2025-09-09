@@ -75,7 +75,7 @@ public class GameManagers : MonoBehaviour
 
         // Hide UI elements at start
         m_TimerText.gameObject.SetActive(false);
-        m_MessageText.text = "Get Ready";
+        m_MessageText.text = "Get Ready , press 'Enter to Start'";
         m_HighScorePanel.SetActive(false);
         m_NewGameButton.gameObject.SetActive(false);
         m_HighScoresButton.gameObject.SetActive(false);
@@ -172,6 +172,7 @@ public class GameManagers : MonoBehaviour
     {
         bool isGameOver = false;
         m_gameTime += Time.deltaTime;
+
 
         // Update timer display once per second
         int seconds = Mathf.RoundToInt(m_gameTime);
